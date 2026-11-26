@@ -9,7 +9,7 @@ class Jaomix implements Plugin.PagePlugin {
   id = 'jaomix.ru';
   name = 'Jaomix';
   site = 'https://jaomix.ru';
-  version = '1.0.3';
+  version = '1.0.4';
   icon = 'src/ru/jaomix/icon.png';
 
   async popularNovels(
