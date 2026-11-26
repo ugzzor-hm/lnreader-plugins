@@ -140,7 +140,7 @@ class Jaomix implements Plugin.PagePlugin {
       });
     });
 
-    return chapters;
+    return chapters.reverse();
   }
 
   async parseChapter(chapterPath: string): Promise<string> {
