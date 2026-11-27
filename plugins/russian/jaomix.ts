@@ -9,8 +9,9 @@ class Jaomix implements Plugin.PagePlugin {
   id = 'jaomix.ru';
   name = 'Jaomix';
   site = 'https://jaomix.ru';
-  version = '1.0.4';
+  version = '1.0.5';
   icon = 'src/ru/jaomix/icon.png';
+  totalPagesCache: Record<string, number> = {};
 
   async popularNovels(
     pageNo: number,
@@ -98,31 +99,38 @@ class Jaomix implements Plugin.PagePlugin {
           : NovelStatus.Completed;
       }
     });
-    novel.chapters = this.parseChapters(loadedCheerio);
+    this.totalPagesCache[novelPath] = novel.totalPages;
+    novel.chapters =
+      novel.totalPages > 1
+        ? (await this.parsePage(novelPath, '1')).chapters
+        : this.parseChapters(loadedCheerio);
     return novel;
   }
 
-  async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
-    const body = await fetchApi(`${this.site}/wp-admin/admin-ajax.php`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Referer: this.site + novelPath,
-        Origin: this.site,
-      },
-      body: new URLSearchParams({
-        action: 'loadpagenavchapstt',
-        page,
-      }).toString(),
-    }).then(data => data.text());
+async parsePage(novelPath: string, page: string): Promise<Plugin.SourcePage> {
+  const total = this.totalPagesCache[novelPath] || 1;
+  const sitePage = total > 1 ? String(total - Number(page) + 1) : page;
 
-    const loadedCheerio = parseHTML(body);
-    const chapters = this.parseChapters(loadedCheerio);
+  const body = await fetchApi(`${this.site}/wp-admin/admin-ajax.php`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Referer: this.site + novelPath,
+      Origin: this.site,
+    },
+    body: new URLSearchParams({
+      action: 'loadpagenavchapstt',
+      page: sitePage,
+    }).toString(),
+  }).then(data => data.text());
 
-    return {
-      chapters,
-    };
-  }
+  const loadedCheerio = parseHTML(body);
+  const chapters = this.parseChapters(loadedCheerio);
+
+  return {
+    chapters,
+  };
+}
 
   parseChapters(loadedCheerio: CheerioAPI) {
     const chapters: Plugin.ChapterItem[] = [];
